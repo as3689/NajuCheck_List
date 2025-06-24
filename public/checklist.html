@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나주 체크리스트</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="./ico/logo.ico" type="image/x-icon">
+</head>
+<body>
+  <div class="main-container">
+    <!-- 상단 헤더 -->
+    <header class="header">
+      <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+      <div class="header-left">
+        <img src="./ico/logo.png" alt="Logo" class="logo">
+      </div>
+      <div class="header-center">
+        <h1>나주 체크리스트</h1>
+      </div>
+      <div class="header-right">
+        <span id="date-time"></span>
+        <span id="username-display"></span>
+        <button onclick="logout()">로그아웃</button>
+      </div>
+    </header>
+
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+      <button class="hide-btn" onclick="hideSidebar()">☰</button>
+      <h3>테이블 생성</h3>
+      <div id="dong-buttons">
+        <button onclick="showTable('3동')">3동</button>
+        <button onclick="showTable('4동')">4동</button>
+        <button onclick="showTable('5동')">5동</button>
+      </div>
+      <button onclick="addDong()">동 추가</button>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="content">
+      <div class="date-selector">
+        <button id="save-checklist-btn" onclick="saveChecklist()">저장</button>
+        <button id="load-checklist-btn" onclick="showCalendarModal()">조회</button>
+      </div>
+      <div id="tables-container"></div>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
