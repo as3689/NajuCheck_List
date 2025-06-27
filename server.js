@@ -50,9 +50,9 @@ function connectDB() {
 
     // check_list 테이블 기본 데이터 초기화
     const defaultChecklists = [
-      { name: '3동', columns: JSON.stringify(['점검항목']) },
-      { name: '4동', columns: JSON.stringify(['점검항목']) },
-      { name: '5동', columns: JSON.stringify(['점검항목']) }
+      { name: '3동', columns: JSON.stringify(['점검내용', '결과', '비고', '작성자', '작성일']) },
+      { name: '4동', columns: JSON.stringify(['점검내용', '결과', '비고', '작성자', '작성일']) },
+      { name: '5동', columns: JSON.stringify(['점검내용', '결과', '비고', '작성자', '작성일']) }
     ];
 
     defaultChecklists.forEach(checklist => {
@@ -188,7 +188,7 @@ app.get('/api/checklists/:checklistId', (req, res) => {
 // 체크리스트 생성 API
 app.post('/api/checklists', (req, res) => {
   const { name, columns } = req.body;
-  const defaultColumns = columns || ['점검항목'];
+  const defaultColumns = columns || ['점검내용', '결과', '비고', '작성자', '작성일'];
   console.log('Creating checklist:', { name, columns: defaultColumns });
   db.query('INSERT INTO check_list (name, columns) VALUES (?, ?)', [name, JSON.stringify(defaultColumns)], (err, result) => {
     if (err) {
@@ -377,7 +377,7 @@ app.post('/api/snapshots', (req, res) => {
         (err, result) => {
           if (err) {
             console.error('Error saving snapshot:', err.message);
-            return res.status(500).json({ success: false, message: 'Failed to save snapshot' });
+            return res.status(500).json({ success: false, message: 'Failed to save snapshot', error: err.message });
           }
           console.log('Saved snapshot:', { id: result.insertId, tableId, snapshot_date });
           res.json({ success: true, id: result.insertId });
@@ -390,7 +390,7 @@ app.post('/api/snapshots', (req, res) => {
   });
 });
 
-// 스냅샷 조회 API
+// 스냅샷 조회 API (수정된 부분)
 app.get('/api/snapshots', (req, res) => {
   const { date, tableId } = req.query;
   console.log('Query parameters:', { date, tableId });
@@ -400,26 +400,31 @@ app.get('/api/snapshots', (req, res) => {
   }
   console.log(`Fetching snapshot for date ${date} and table ${tableId}`);
   db.query(
-    'SELECT columns, items FROM checklist_snapshots WHERE snapshot_date = ? AND table_id = ? ORDER BY timestamp DESC LIMIT 1',
-    [date, tableId],
+    'SELECT columns, items FROM checklist_snapshots WHERE snapshot_date LIKE ? AND table_id = ? ORDER BY timestamp DESC LIMIT 1',
+    [`${date}%`, tableId],
     (err, results) => {
       if (err) {
-        console.error('Error fetching snapshot:', err.message);
-        return res.status(500).json({ success: false, message: 'Failed to fetch snapshot' });
+        console.error('Database error fetching snapshot:', err.message, err.stack);
+        return res.status(500).json({ success: false, message: 'Database error', error: err.message });
       }
       if (results.length === 0) {
         console.log(`No snapshot found for date ${date} and table ${tableId}`);
         return res.status(404).json({ success: false, message: 'Snapshot not found' });
       }
-      console.log(`Fetched snapshot for date ${date} and table ${tableId}:`, results[0]);
+      const rawData = results[0];
+      console.log('Raw data from DB:', { rawColumns: rawData.columns, rawItems: rawData.items });
       try {
-        res.json({
-          columns: JSON.parse(results[0].columns),
-          items: JSON.parse(results[0].items)
-        });
+        // `json` 타입이 이미 객체로 반환될 수 있으므로, 문자열인지 확인 후 파싱
+        const columns = (typeof rawData.columns === 'string') ? JSON.parse(rawData.columns) : rawData.columns;
+        const items = (typeof rawData.items === 'string') ? JSON.parse(rawData.items) : rawData.items;
+        if (!Array.isArray(columns) || !Array.isArray(items)) {
+          throw new Error('Invalid array structure');
+        }
+        console.log('Parsed snapshot data:', { columns, items });
+        res.json({ columns, items });
       } catch (e) {
-        console.error(`Error parsing snapshot data for date ${date} and table ${tableId}:`, e.message);
-        return res.status(500).json({ success: false, message: 'Invalid snapshot data format' });
+        console.error(`Error parsing snapshot data for date ${date} and table ${tableId}:`, e.message, 'Raw data:', { rawColumns: rawData.columns, rawItems: rawData.items });
+        return res.status(500).json({ success: false, message: 'Invalid snapshot data format', rawColumns: rawData.columns, rawItems: rawData.items });
       }
     }
   );
