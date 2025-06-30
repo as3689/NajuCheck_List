@@ -1,7 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const path = require('path');
-const cron = require('node-cron'); // node-cron 추가
+const cron = require('node-cron');
 const app = express();
 const port = 3000;
 
@@ -37,7 +37,9 @@ function connectDB() {
     ];
 
     db.query('DELETE FROM users', (err) => {
-      if (err) console.error('Error deleting existing users:', err.message);
+     
+
+ if (err) console.error('Error deleting existing users:', err.message);
       console.log('Existing users deleted.');
       allowedUsers.forEach(user => {
         db.query('INSERT INTO users (username, password) VALUES (?, ?) ON DUPLICATE KEY UPDATE password = ?', 
@@ -55,11 +57,50 @@ function connectDB() {
       { name: '5동', columns: JSON.stringify(['점검내용', '결과', '비고', '작성자', '작성일']) }
     ];
 
+    // 기본 항목 정의
+    const defaultItems = [
+      { data: JSON.stringify({ '점검내용': 'A상권 점검', '결과': false, '비고': '', '작성자': '', '작성일': '' }), display_order: 0 },
+      { data: JSON.stringify({ '점검내용': 'B상권 점검', '결과': false, '비고': '', '작성자': '', '작성일': '' }), display_order: 1 }
+    ];
+
     defaultChecklists.forEach(checklist => {
       db.query('INSERT INTO check_list (name, columns) VALUES (?, ?) ON DUPLICATE KEY UPDATE columns = ?', 
-        [checklist.name, checklist.columns, checklist.columns], (err) => {
-          if (err) console.error(`Error initializing checklist ${checklist.name}:`, err.message);
-          else console.log(`Checklist ${checklist.name} initialized with columns:`, checklist.columns);
+        [checklist.name, checklist.columns, checklist.columns], (err, result) => {
+          if (err) {
+            console.error(`Error initializing checklist ${checklist.name}:`, err.message);
+          } else {
+            console.log(`Checklist ${checklist.name} initialized with columns:`, checklist.columns);
+            // 각 체크리스트에 대해 기본 항목 추가
+            db.query('SELECT id FROM check_list WHERE name = ?', [checklist.name], (err, results) => {
+              if (err) {
+                console.error(`Error fetching checklist ID for ${checklist.name}:`, err.message);
+                return;
+              }
+              if (results.length === 0) {
+                console.error(`Checklist ${checklist.name} not found after insertion`);
+                return;
+              }
+              const checklistId = results[0].id;
+              // 기존 항목 삭제
+              db.query('DELETE FROM items WHERE table_id = ?', [checklistId], (err) => {
+                if (err) {
+                  console.error(`Error deleting existing items for checklist ${checklist.name}:`, err.message);
+                  return;
+                }
+                // 기본 항목 삽입
+                defaultItems.forEach(item => {
+                  db.query('INSERT INTO items (table_id, data, display_order) VALUES (?, ?, ?)', 
+                    [checklistId, item.data, item.display_order], (err) => {
+                      if (err) {
+                        console.error(`Error inserting item for checklist ${checklist.name}:`, err.message);
+                      } else {
+                        console.log(`Item initialized for checklist ${checklist.name}:`, item.data);
+                      }
+                    });
+                });
+              });
+            });
+          }
         });
     });
 
@@ -83,7 +124,7 @@ function connectDB() {
         }
       });
     }, {
-      timezone: 'Asia/Seoul' // KST 타임존 설정
+      timezone: 'Asia/Seoul'
     });
   });
 }
@@ -197,6 +238,22 @@ app.post('/api/checklists', (req, res) => {
       return;
     }
     console.log('Created checklist:', { id: result.insertId, name, columns: defaultColumns });
+    // 새 체크리스트에 기본 항목 추가
+    const checklistId = result.insertId;
+    const defaultItems = [
+      { data: JSON.stringify({ '점검내용': 'A상권 점검', '결과': false, '비고': '', '작성자': '', '작성일': '' }), display_order: 0 },
+      { data: JSON.stringify({ '점검내용': 'B상권 점검', '결과': false, '비고': '', '작성자': '', '작성일': '' }), display_order: 1 }
+    ];
+    defaultItems.forEach(item => {
+      db.query('INSERT INTO items (table_id, data, display_order) VALUES (?, ?, ?)', 
+        [checklistId, item.data, item.display_order], (err) => {
+          if (err) {
+            console.error(`Error inserting item for checklist ${name}:`, err.message);
+          } else {
+            console.log(`Item initialized for checklist ${name}:`, item.data);
+          }
+        });
+    });
     res.json({ success: true, id: result.insertId });
   });
 });
@@ -407,25 +464,49 @@ app.get('/api/snapshots', (req, res) => {
         console.error('Database error fetching snapshot:', err.message, err.stack);
         return res.status(500).json({ success: false, message: 'Database error', error: err.message });
       }
-      if (results.length === 0) {
-        console.log(`No snapshot found for date ${date} and table ${tableId}`);
-        return res.status(404).json({ success: false, message: 'Snapshot not found' });
-      }
-      const rawData = results[0];
-      console.log('Raw data from DB:', { rawColumns: rawData.columns, rawItems: rawData.items });
-      try {
-        // `json` 타입이 이미 객체로 반환될 수 있으므로, 문자열인지 확인 후 파싱
-        const columns = (typeof rawData.columns === 'string') ? JSON.parse(rawData.columns) : rawData.columns;
-        const items = (typeof rawData.items === 'string') ? JSON.parse(rawData.items) : rawData.items;
-        if (!Array.isArray(columns) || !Array.isArray(items)) {
-          throw new Error('Invalid array structure');
+      if (results.length > 0) {
+        const rawData = results[0];
+        console.log('Raw snapshot data from DB:', { rawColumns: rawData.columns, rawItems: rawData.items });
+        try {
+          const columns = typeof rawData.columns === 'string' ? JSON.parse(rawData.columns) : rawData.columns;
+          const items = typeof rawData.items === 'string' ? JSON.parse(rawData.items) : rawData.items;
+          if (!Array.isArray(columns) || !Array.isArray(items)) {
+            throw new Error('Invalid array structure');
+          }
+          console.log('Parsed snapshot data:', { columns, items });
+          return res.json({ columns, items });
+        } catch (e) {
+          console.error(`Error parsing snapshot data for date ${date} and table ${tableId}:`, e.message);
+          return res.status(500).json({ success: false, message: 'Invalid snapshot data format', rawColumns: rawData.columns, rawItems: rawData.items });
         }
-        console.log('Parsed snapshot data:', { columns, items });
-        res.json({ columns, items });
-      } catch (e) {
-        console.error(`Error parsing snapshot data for date ${date} and table ${tableId}:`, e.message, 'Raw data:', { rawColumns: rawData.columns, rawItems: rawData.items });
-        return res.status(500).json({ success: false, message: 'Invalid snapshot data format', rawColumns: rawData.columns, rawItems: rawData.items });
       }
+      // 스냅샷이 없는 경우 현재 items 테이블에서 데이터 가져오기
+      console.log(`No snapshot found for date ${date} and table ${tableId}, fetching current items`);
+      db.query('SELECT id, data, display_order FROM items WHERE table_id = ? ORDER BY display_order', [tableId], (err, itemResults) => {
+        if (err) {
+          console.error('Error fetching items:', err.message);
+          return res.status(500).json({ success: false, message: 'Failed to fetch items' });
+        }
+        db.query('SELECT columns FROM check_list WHERE id = ?', [tableId], (err, checklistResults) => {
+          if (err || checklistResults.length === 0) {
+            console.error('Error fetching checklist columns:', err ? err.message : 'Checklist not found');
+            return res.status(500).json({ success: false, message: 'Failed to fetch checklist columns' });
+          }
+          try {
+            const columns = typeof checklistResults[0].columns === 'string' ? JSON.parse(checklistResults[0].columns) : checklistResults[0].columns;
+            const items = itemResults.map(row => ({
+              id: row.id,
+              data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+              display_order: row.display_order
+            }));
+            console.log('Returning current data for date:', { columns, items });
+            res.json({ columns, items });
+          } catch (e) {
+            console.error('Error parsing items or columns:', e.message);
+            res.status(500).json({ success: false, message: 'Invalid data format' });
+          }
+        });
+      });
     }
   );
 });
