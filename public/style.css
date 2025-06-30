@@ -1,601 +1,3 @@
-/* body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #1e1e1e;
-  color: #ffffff;
-  text-align: center;
-}
-
-.login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #1e1e1e;
-  color: #fff;
-}
-
-.login-container .logo {
-  width: auto;
-  height: 50px;
-  margin-bottom: 20px;
-}
-
-.login-container h2 {
-  margin-bottom: 20px;
-  color: #b266ff;
-}
-
-.login-container form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 300px;
-}
-
-.form-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.form-group label {
-  width: 80px;
-  text-align: right;
-  color: #fff;
-}
-
-.form-group input {
-  flex: 1;
-  padding: 5px;
-  background-color: #333;
-  border: none;
-  color: #fff;
-  width: 200px;
-}
-
-.login-container button {
-  padding: 10px;
-  background-color: #007bff;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  width: 100%;
-}
-
-.main-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  background-color: #2a2a2a;
-  position: fixed;
-  width: 100%;
-  top: 0;
-  z-index: 1000;
-  box-sizing: border-box;
-  transition: padding-left 0.3s ease;
-}
-
-.header.shifted {
-  padding-left: 0;
-}
-
-.toggle-btn {
-  background-color: #555;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 5px 10px;
-  margin-right: 10px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.header-left .logo {
-  width: auto;
-  height: 50px;
-}
-
-.header-center {
-  flex: 1;
-  text-align: center;
-}
-
-.header-center h1 {
-  margin: 0;
-  font-size: 2em;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-right button {
-  padding: 5px 10px;
-  background-color: #ff4444;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.sidebar {
-  width: 200px;
-  background-color: #2a2a2a;
-  padding: 20px;
-  position: fixed;
-  height: 100%;
-  top: 0;
-  left: 0;
-  transition: transform 0.3s ease;
-  z-index: 1001;
-  box-sizing: border-box;
-}
-
-.sidebar.collapsed {
-  transform: translateX(-100%);
-}
-
-.hide-btn {
-  background-color: #ff4444;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 5px 10px;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-#dong-buttons button {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  background-color: #007bff;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.sidebar button:not(.hide-btn) {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  background-color: #007bff;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.content {
-  flex: 1;
-  padding: 20px;
-  margin-left: 200px;
-  margin-top: 80px;
-  background-color: #1e1e1e;
-  transition: margin-left 0.3s ease;
-  box-sizing: border-box;
-}
-
-.content.shifted {
-  margin-left: 0;
-}
-
-.table-view {
-  margin-bottom: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 10px;
-  border: 1px solid #444;
-  text-align: left;
-}
-
-th {
-  background-color: #2a2a2a;
-}
-
-td input {
-  width: 100%;
-  padding: 5px;
-  background-color: #333;
-  border: none;
-  color: #fff;
-  box-sizing: border-box;
-}
-
-td textarea.checklist-textarea {
-  width: 100%;
-  min-height: 40px;
-  padding: 5px;
-  background-color: #333;
-  border: none;
-  color: #fff;
-  box-sizing: border-box;
-  resize: vertical;
-  overflow-wrap: break-word;
-  white-space: pre-wrap;
-  font-family: Arial, sans-serif;
-}
-
-button {
-  padding: 5px 10px;
-  background-color: #007bff;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-}
-
-.date-selector {
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding-top: 10px;
-}
-
-#save-checklist-btn {
-  padding: 8px 20px;
-  background-color: #28a745;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  border-radius: 5px;
-  width: auto;
-  min-width: 120px;
-}
-
-#save-checklist-btn:hover {
-  background-color: #218838;
-}
-
-#load-checklist-btn {
-  padding: 8px 20px;
-  background-color: #17a2b8;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  border-radius: 5px;
-  width: auto;
-  min-width: 120px;
-}
-
-#load-checklist-btn:hover {
-  background-color: #138496;
-}
-
-.calendar {
-  width: 100%;
-  max-width: 300px;
-  background-color: #2a2a2a;
-  border-radius: 5px;
-  padding: 10px;
-}
-
-.calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.calendar-nav {
-  background-color: #555;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  padding: 5px 10px;
-  border-radius: 3px;
-}
-
-.calendar-nav:hover {
-  background-color: #666;
-}
-
-.calendar-body {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-}
-
-.calendar-day {
-  padding: 8px;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 3px;
-}
-
-.calendar-day:hover {
-  background-color: #444;
-}
-
-.calendar-day.empty {
-  background-color: transparent;
-  cursor: default;
-}
-
-.calendar-day.selected {
-  background-color: #007bff;
-  color: #fff;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1002;
-}
-
-.modal-content {
-  background-color: #2a2a2a;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 350px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  text-align: center;
-}
-
-.modal-content h3 {
-  margin-top: 0;
-  color: #b266ff;
-  font-size: 1.5em;
-}
-
-.modal-content input {
-  width: 100%;
-  padding: 8px;
-  margin: 10px 0;
-  border: 1px solid #444;
-  border-radius: 5px;
-  background-color: #333;
-  color: #fff;
-  box-sizing: border-box;
-}
-
-.modal-buttons {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.modal-buttons button {
-  flex: 1;
-  padding: 8px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-#modalConfirmBtn {
-  background-color: #007bff;
-}
-
-#modalConfirmBtn:hover {
-  background-color: #0056b3;
-}
-
-#modalCancelBtn {
-  background-color: #ff4444;
-}
-
-#modalCancelBtn:hover {
-  background-color: #cc0000;
-}
-
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px;
-    min-height: 120px;
-  }
-  .header-left, .header-center, .header-right {
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 10px;
-  }
-
-  .header-right {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .header-right span {
-    margin-right: 10px;
-  }
-  .toggle-btn {
-    position: absolute;
-    left: 10px;
-    top: 10px;
-  }
-
-  .sidebar {
-    width: 150px;
-  }
-
-  .content {
-    margin-left: 150px;
-    margin-top: 140px;
-  }
-
-  .content.shifted {
-    margin-left: 0;
-  }
-
-  .login-container form {
-    width: 80%;
-  }
-
-  .form-group label {
-    width: 70px;
-  }
-
-  .form-group input {
-    width: 150px;
-  }
-
-  .header-left .logo {
-    display: none;
-  }
-
-  .header-center h1 {
-    font-size: 1.2em;
-  }
-
-  .toggle-btn {
-    padding: 5px;
-  }
-
-  .modal-content {
-    width: 80%;
-    max-width: 300px;
-  }
-
-  .date-selector {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    padding-top: 20px;
-  }
-
-  #save-checklist-btn, #load-checklist-btn {
-    width: auto;
-    min-width: 100px;
-    margin-bottom: 0;
-  }
-
-  .calendar {
-    max-width: 250px;
-  }
-
-  td textarea.checklist-textarea {
-    min-height: 60px;
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar {
-    width: 120px;
-  }
-
-  .content {
-    margin-left: 120px;
-    padding: 10px;
-    margin-top: 160px;
-  }
-
-  .content.shifted {
-    margin-left: 0;
-  }
-
-  .login-container .logo {
-    width: auto;
-    height: 40px;
-  }
-
-  .form-group label {
-    width: 60px;
-  }
-
-  .form-group input {
-    width: 120px;
-  }
-
-  .header {
-    min-height: 140px;
-  }
-
-  .header-right {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .header-right span {
-    margin-right: 10px;
-  }
-
-  .toggle-btn {
-    position: absolute;
-    left: 10px;
-    top: 10px;
-  }
-
-  .modal-content {
-    width: 90%;
-    max-width: 250px;
-    padding: 15px;
-  }
-
-  .modal-content h3 {
-    font-size: 1.2em;
-  }
-
-  .modal-content input {
-    padding: 6px;
-  }
-
-  .modal-buttons button {
-    padding: 6px;
-    font-size: 0.9em;
-  }
-
-  .date-selector {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    padding-top: 20px;
-  }
-
-  #save-checklist-btn, #load-checklist-btn {
-    min-width: 90px;
-    padding: 6px 15px;
-    margin-bottom: 0;
-  }
-
-  .calendar {
-    max-width: 200px;
-  }
-
-  .calendar-day {
-    padding: 6px;
-    font-size: 0.9em;
-  }
-
-  td textarea.checklist-textarea {
-    min-height: 50px;
-    font-size: 12px;
-  }
-} */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -651,6 +53,7 @@ body {
   border: none;
   color: #fff;
   width: 200px;
+  border-radius: 4px;
 }
 
 .login-container button {
@@ -660,6 +63,12 @@ body {
   color: #fff;
   cursor: pointer;
   width: 100%;
+  border-radius: 5px;
+  transition: background-color 0.2s ease;
+}
+
+.login-container button:hover {
+  background-color: #0056b3;
 }
 
 .main-container {
@@ -692,6 +101,12 @@ body {
   cursor: pointer;
   padding: 5px 10px;
   margin-right: 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background-color: #666;
 }
 
 .header-left {
@@ -726,6 +141,12 @@ body {
   border: none;
   color: #fff;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.header-right button:hover {
+  background-color: #cc0000;
 }
 
 .sidebar {
@@ -753,6 +174,12 @@ body {
   padding: 5px 10px;
   margin-bottom: 10px;
   width: 100%;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.hide-btn:hover {
+  background-color: #cc0000;
 }
 
 #dong-buttons button {
@@ -764,6 +191,12 @@ body {
   border: none;
   color: #fff;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+#dong-buttons button:hover {
+  background-color: #0056b3;
 }
 
 .sidebar button:not(.hide-btn) {
@@ -775,6 +208,12 @@ body {
   border: none;
   color: #fff;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar button:not(.hide-btn):hover {
+  background-color: #0056b3;
 }
 
 .content {
@@ -803,12 +242,11 @@ table {
 th, td {
   padding: 10px;
   border: 1px solid #444;
-  text-align: left;
+  text-align: center;
 }
 
 th {
   background-color: #2a2a2a;
-  text-align: center;
 }
 
 th:nth-child(1), td:nth-child(1) {
@@ -817,7 +255,6 @@ th:nth-child(1), td:nth-child(1) {
 
 th:nth-child(2), td:nth-child(2) {
   width: 50px; /* 결과: 체크박스 */
-  text-align: center;
 }
 
 th:nth-child(3), td:nth-child(3) {
@@ -825,11 +262,15 @@ th:nth-child(3), td:nth-child(3) {
 }
 
 th:nth-child(4), td:nth-child(4) {
-  width: 120px; /* 작성자: 증가 */
+  width: 120px; /* 작성자 */
 }
 
 th:nth-child(5), td:nth-child(5) {
-  width: 120px; /* 작성일: 증가 */
+  width: 120px; /* 작성일 */
+}
+
+th:nth-child(6), td:nth-child(6) {
+  width: 60px; /* 사진: + 버튼/아이콘 */
 }
 
 td textarea.checklist-textarea {
@@ -869,7 +310,43 @@ td input.checklist-checkbox {
   cursor: pointer;
 }
 
-/* 드래그 앤 드롭 스타일 */
+.upload-photo-btn {
+  padding: 5px 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.upload-photo-btn:hover {
+  background-color: #45a049;
+}
+
+.photo-icon {
+  color: #2196F3;
+  cursor: pointer;
+  font-size: 20px;
+  transition: color 0.2s ease;
+}
+
+.photo-icon:hover {
+  color: #1976d2;
+}
+
+.photo-modal .modal-content {
+  max-width: 500px;
+  text-align: center;
+}
+
+.modal-photo {
+  margin-bottom: 10px;
+  max-width: 100%;
+  max-height: 400px;
+}
+
 table tr {
   transition: all 0.2s ease;
   touch-action: manipulation;
@@ -884,7 +361,6 @@ table tr.dragging {
   opacity: 0.7;
   background-color: #e0f7fa;
   border: 2px dashed #0288d1;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 table tr:last-child {
@@ -897,16 +373,22 @@ button {
   border: none;
   color: #fff;
   cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 .date-selector {
   margin-bottom: 20px;
   display: flex;
   align-items: center;
-  justify-content: flex-end; /* 버튼 우측 정렬 */
+  justify-content: flex-end;
   gap: 10px;
   padding-top: 10px;
-  padding-right: 20px; /* 우측 여백 추가 */
+  padding-right: 20px;
 }
 
 #save-checklist-btn {
@@ -1064,6 +546,32 @@ button {
   background-color: #cc0000;
 }
 
+#deletePhotoBtn {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#deletePhotoBtn:hover {
+  background-color: #cc0000;
+}
+
+#modalCloseBtn {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#modalCloseBtn:hover {
+  background-color: #555;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -1071,7 +579,10 @@ button {
     padding: 10px;
     min-height: 120px;
   }
-  .header-left, .header-center, .header-right {
+
+  .header-left,
+  .header-center,
+  .header-right {
     width: 100%;
     justify-content: center;
     margin-bottom: 10px;
@@ -1086,6 +597,7 @@ button {
   .header-right span {
     margin-right: 10px;
   }
+
   .toggle-btn {
     position: absolute;
     left: 10px;
@@ -1137,13 +649,14 @@ button {
   .date-selector {
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: flex-end; /* 버튼 우측 정렬 */
+    justify-content: flex-end;
     gap: 10px;
     padding-top: 20px;
-    padding-right: 15px; /* 태블릿에서 우측 여백 */
+    padding-right: 15px;
   }
 
-  #save-checklist-btn, #load-checklist-btn {
+  #save-checklist-btn,
+  #load-checklist-btn {
     width: auto;
     min-width: 100px;
     margin-bottom: 0;
@@ -1166,12 +679,18 @@ button {
     font-size: 16px;
   }
 
-  th:nth-child(4), td:nth-child(4),
-  th:nth-child(5), td:nth-child(5) {
-    width: 100px; /* 작성자/작성일: 태블릿에서 증가 */
+  th:nth-child(4),
+  td:nth-child(4),
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 100px;
   }
 
-  /* 드래그 앤 드롭 반응형 */
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 50px;
+  }
+
   table tr {
     touch-action: manipulation;
     min-height: 60px;
@@ -1184,11 +703,10 @@ button {
   table tr.dragging {
     opacity: 0.8;
     border: 1px dashed #0288d1;
-    box-shadow: none;
   }
 
-  table tr:last-child {
-    cursor: default;
+  .photo-modal .modal-content {
+    max-width: 400px;
   }
 }
 
@@ -1262,13 +780,14 @@ button {
   .date-selector {
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: flex-end; /* 버튼 우측 정렬 */
+    justify-content: flex-end;
     gap: 8px;
     padding-top: 20px;
-    padding-right: 10px; /* 모바일에서 우측 여백 */
+    padding-right: 10px;
   }
 
-  #save-checklist-btn, #load-checklist-btn {
+  #save-checklist-btn,
+  #load-checklist-btn {
     min-width: 90px;
     padding: 6px 15px;
     margin-bottom: 0;
@@ -1296,12 +815,18 @@ button {
     font-size: 15px;
   }
 
-  th:nth-child(4), td:nth-child(4),
-  th:nth-child(5), td:nth-child(5) {
-    width: 80px; /* 작성자/작성일: 모바일에서 증가 */
+  th:nth-child(4),
+  td:nth-child(4),
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 80px;
   }
 
-  /* 드래그 앤 드롭 반응형 */
+  th:nth-child(6),
+  td:nth-child(6) {
+    width: 40px;
+  }
+
   table tr {
     touch-action: manipulation;
     min-height: 70px;
@@ -1314,10 +839,13 @@ button {
   table tr.dragging {
     opacity: 0.9;
     border: 1px dashed #0288d1;
-    box-shadow: none;
   }
 
-  table tr:last-child {
-    cursor: default;
+  .photo-modal .modal-content {
+    max-width: 300px;
+  }
+
+  .modal-photo {
+    max-height: 200px;
   }
 }

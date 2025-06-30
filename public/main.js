@@ -24,19 +24,27 @@ function adjustFontSize(textarea) {
 
 async function createTable(name) {
   console.log(`Creating table: ${name}`);
-  const columns = ['점검내용', '결과', '비고', '작성자', '작성일'];
-  const response = await fetch('/api/checklists', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, columns })
-  });
-  const result = await response.json();
-  if (result.success) {
-    console.log(`Table created: ${name}, ID: ${result.id}`);
-    return result.id;
+  const columns = ['점검내용', '결과', '비고', '작성자', '작성일', '사진'];
+  try {
+    const response = await fetch('/api/checklists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, columns })
+    });
+    const result = await response.json();
+    if (result.success) {
+      console.log(`Table created: ${name}, ID: ${result.id}`);
+      return result.id;
+    } else {
+      console.error('Failed to create checklist:', result.message || 'Unknown error');
+      alert('체크리스트 생성에 실패했습니다.');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error creating table:', error.message);
+    alert('체크리스트 생성 중 오류가 발생했습니다: ' + error.message);
+    return null;
   }
-  console.error('Failed to create checklist:', result.message || 'Unknown error');
-  return null;
 }
 
 function showItemModal(checklistId, columns) {
@@ -46,7 +54,7 @@ function showItemModal(checklistId, columns) {
   modal.innerHTML = `
     <div class="modal-content">
       <h3>새 항목 추가</h3>
-      <input type="text" id="itemNameInput" placeholder="점검내용 입력 (예: A상권 점검)" />
+      <input type="text" id="itemNameInput" placeholder="점검내용 입력 (예: 추가 점검)" />
       <div class="modal-buttons">
         <button id="modalConfirmBtn">추가</button>
         <button id="modalCancelBtn">취소</button>
@@ -69,23 +77,76 @@ function showItemModal(checklistId, columns) {
         else newData[col] = '';
       });
       console.log(`Adding item to checklist ${checklistId}:`, newData);
-      const response = await fetch('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId: checklistId, data: newData, display_order: 0 })
-      });
-      const result = await response.json();
-      if (result.success) {
-        showTable(currentTableName);
-      } else {
-        console.error('Failed to add item:', result.message);
-        alert('항목 추가에 실패했습니다.');
+      try {
+        const response = await fetch('/api/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tableId: checklistId, data: newData, display_order: 0 })
+        });
+        const result = await response.json();
+        if (result.success) {
+          showTable(currentTableName);
+        } else {
+          console.error('Failed to add item:', result.message);
+          alert('항목 추가에 실패했습니다: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error adding item:', error.message);
+        alert('항목 추가 중 오류가 발생했습니다: ' + error.message);
       }
     }
     document.body.removeChild(modal);
   };
 
   cancelBtn.onclick = () => {
+    document.body.removeChild(modal);
+  };
+}
+
+function showPhotoModal(itemId, photoUrl) {
+  console.log(`Opening photo modal for item ${itemId}, photoUrl: ${photoUrl}`);
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content photo-modal">
+      <h3>사진 보기</h3>
+      <img src="${photoUrl}" class="modal-photo" style="max-width: 100%; max-height: 400px;" />
+      <div class="modal-buttons">
+        <button id="deletePhotoBtn">사진 삭제</button>
+        <button id="modalCloseBtn">닫기</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const deleteBtn = document.getElementById('deletePhotoBtn');
+  const closeBtn = document.getElementById('modalCloseBtn');
+
+  deleteBtn.onclick = async () => {
+    if (confirm('이 사진을 삭제하시겠습니까?')) {
+      console.log(`Deleting photo for item ${itemId}`);
+      try {
+        const response = await fetch(`/api/photos/${itemId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+          console.log(`Photo deleted for item ${itemId}`);
+          showTable(currentTableName);
+          document.body.removeChild(modal);
+        } else {
+          console.error('Failed to delete photo:', result.message);
+          alert('사진 삭제에 실패했습니다: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error deleting photo:', error.message);
+        alert('사진 삭제 중 오류가 발생했습니다: ' + error.message);
+      }
+    }
+  };
+
+  closeBtn.onclick = () => {
     document.body.removeChild(modal);
   };
 }
@@ -190,20 +251,21 @@ async function loadTableByDate(date) {
       const errorData = await response.json().catch(() => ({ message: 'No error details' }));
       console.error('Failed to load snapshot:', response.status, response.statusText, errorData);
       alert(`스냅샷 데이터를 로드하지 못했습니다: ${errorData.message || response.statusText}`);
-      showTable(currentTableName); // 서버에서 현재 데이터를 반환하므로 showTable 호출
+      showTable(currentTableName);
       return;
     }
     const snapshot = await response.json();
     console.log('Snapshot data:', JSON.stringify(snapshot, null, 2));
     if (!snapshot || !snapshot.columns || !snapshot.items || !Array.isArray(snapshot.columns) || !Array.isArray(snapshot.items)) {
       console.error('Invalid snapshot data structure:', snapshot);
-      alert(`유효하지 않은 스냅샷 데이터입니다: ${JSON.stringify(snapshot)}`);
+      alert(`유효하지 않은 스냅샷 데이터입니다.`);
       return;
     }
 
     const container = document.getElementById('tables-container');
     if (!container) {
       console.error('Error: tables-container element not found in the DOM.');
+      alert('테이블 컨테이너를 찾을 수 없습니다.');
       return;
     }
 
@@ -229,7 +291,6 @@ async function loadTableByDate(date) {
     const tbody = document.createElement('tbody');
     snapshot.items.forEach(item => {
       const row = document.createElement('tr');
-      row.setAttribute('draggable', 'true');
       row.dataset.id = item.id;
       const data = item.data;
       snapshot.columns.forEach(col => {
@@ -241,6 +302,16 @@ async function loadTableByDate(date) {
           checkbox.checked = data[col] === true;
           checkbox.disabled = true; // 과거 데이터는 수정 불가
           td.appendChild(checkbox);
+        } else if (col === '사진') {
+          if (item.photo_url) {
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-image photo-icon';
+            icon.title = '사진 보기';
+            icon.onclick = () => showPhotoModal(item.id, item.photo_url);
+            td.appendChild(icon);
+          } else {
+            td.textContent = '없음';
+          }
         } else {
           const textarea = document.createElement('textarea');
           textarea.className = 'checklist-textarea';
@@ -254,23 +325,12 @@ async function loadTableByDate(date) {
       tbody.appendChild(row);
     });
 
-    const addButtonRow = document.createElement('tr');
-    const addButtonCell = document.createElement('td');
-    addButtonCell.colSpan = snapshot.columns.length;
-    addButtonCell.style.textAlign = 'center';
-    const addButton = document.createElement('button');
-    addButton.textContent = '항목 추가';
-    addButton.disabled = true; // 과거 데이터에는 항목 추가 불가
-    addButtonCell.appendChild(addButton);
-    addButtonRow.appendChild(addButtonCell);
-    tbody.appendChild(addButtonRow);
-
     tableElement.appendChild(tbody);
     tableDiv.appendChild(tableElement);
     container.appendChild(tableDiv);
   } catch (error) {
     console.error('Error in loadTableByDate:', error.message, error.stack);
-    alert('스냅샷 로드 중 오류가 발생했습니다.');
+    alert('스냅샷 로드 중 오류가 발생했습니다: ' + error.message);
   }
 }
 
@@ -316,9 +376,11 @@ async function saveChecklist() {
         결과: item.data.결과 === true || item.data.결과 === false ? item.data.결과 : false,
         비고: String(item.data.비고 || ''),
         작성자: String(item.data.작성자 || ''),
-        작성일: String(item.data.작성일 || '')
+        작성일: String(item.data.작성일 || ''),
+        사진: item.photo_url || ''
       },
-      display_order: item.display_order
+      display_order: item.display_order,
+      photo_url: item.photo_url
     }));
     console.log('Validated items:', JSON.stringify(validItems, null, 2));
 
@@ -364,276 +426,330 @@ async function showTable(name) {
   console.log('showTable called with name:', name);
   currentTableName = name;
   console.log('Fetching /api/checklists...');
-  const response = await fetch('/api/checklists');
-  console.log('Fetch response:', response);
-  if (!response.ok) {
-    console.error('Failed to fetch checklists:', response.status, response.statusText);
-    return;
-  }
-  let checklists;
   try {
-    checklists = await response.json();
+    const response = await fetch('/api/checklists');
+    console.log('Fetch response:', response);
+    if (!response.ok) {
+      console.error('Failed to fetch checklists:', response.status, response.statusText);
+      alert('체크리스트 목록을 가져오지 못했습니다.');
+      return;
+    }
+    let checklists = await response.json();
     console.log('Checklists received:', checklists);
-  } catch (e) {
-    console.error('Failed to parse checklists response:', e.message);
-    return;
-  }
-  if (!checklists) {
-    console.error('Checklists response is empty');
-    return;
-  }
-
-  let checklist = checklists.find(t => t.name === name);
-
-  if (!checklist) {
-    const newTableId = await createTable(name);
-    if (!newTableId) {
-      console.error('Failed to create checklist');
+    if (!checklists) {
+      console.error('Checklists response is empty');
+      alert('체크리스트 데이터가 없습니다.');
       return;
     }
-    const updatedResponse = await fetch('/api/checklists');
-    if (!updatedResponse.ok) {
-      console.error('Failed to fetch updated checklists:', updatedResponse.status, updatedResponse.statusText);
-      return;
-    }
-    checklists = await updatedResponse.json();
-    checklist = checklists.find(t => t.name === name);
+
+    let checklist = checklists.find(t => t.name === name);
+
     if (!checklist) {
-      console.error('Failed to fetch newly created checklist');
+      const newTableId = await createTable(name);
+      if (!newTableId) {
+        console.error('Failed to create checklist');
+        alert('체크리스트 생성에 실패했습니다.');
+        return;
+      }
+      const updatedResponse = await fetch('/api/checklists');
+      if (!updatedResponse.ok) {
+        console.error('Failed to fetch updated checklists:', updatedResponse.status, updatedResponse.statusText);
+        alert('업데이트된 체크리스트 목록을 가져오지 못했습니다.');
+        return;
+      }
+      checklists = await updatedResponse.json();
+      checklist = checklists.find(t => t.name === name);
+      if (!checklist) {
+        console.error('Failed to fetch newly created checklist');
+        alert('새로 생성된 체크리스트를 가져오지 못했습니다.');
+        return;
+      }
+    }
+
+    currentTableId = checklist.id;
+    console.log(`Set currentTableId: ${currentTableId}, currentTableName: ${currentTableName}`);
+
+    const container = document.getElementById('tables-container');
+    if (!container) {
+      console.error('Error: tables-container element not found in the DOM.');
+      alert('테이블 컨테이너를 찾을 수 없습니다.');
       return;
     }
-  }
 
-  currentTableId = checklist.id;
-  console.log(`Set currentTableId: ${currentTableId}, currentTableName: ${currentTableName}`);
+    container.innerHTML = '';
 
-  const container = document.getElementById('tables-container');
-  if (!container) {
-    console.error('Error: tables-container element not found in the DOM.');
-    return;
-  }
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'table-view';
+    tableDiv.innerHTML = `<h2>${checklist.name}</h2>`;
 
-  container.innerHTML = '';
+    const tableElement = document.createElement('table');
+    tableElement.setAttribute('draggable', 'true');
 
-  const tableDiv = document.createElement('div');
-  tableDiv.className = 'table-view';
-  tableDiv.innerHTML = `<h2>${checklist.name}</h2>`;
-
-  const tableElement = document.createElement('table');
-  tableElement.setAttribute('draggable', 'true');
-
-  const thead = document.createElement('thead');
-  const headerRow = document.createElement('tr');
-  const columns = checklist.columns;
-  columns.forEach(col => {
-    const th = document.createElement('th');
-    th.textContent = col;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  tableElement.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  const itemsResponse = await fetch(`/api/items/${checklist.id}`);
-  if (!itemsResponse.ok) {
-    console.error('Failed to fetch items:', itemsResponse.status, itemsResponse.statusText);
-    return;
-  }
-  let items;
-  try {
-    items = await itemsResponse.json();
-  } catch (e) {
-    console.error('Failed to parse items response:', e.message);
-    return;
-  }
-
-  items.forEach(item => {
-    const row = document.createElement('tr');
-    row.setAttribute('draggable', 'true');
-    row.dataset.id = item.id;
-    const data = item.data;
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    const columns = checklist.columns;
     columns.forEach(col => {
-      const td = document.createElement('td');
-      if (col === '결과') {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'checklist-checkbox';
-        checkbox.checked = data[col] === true;
-        checkbox.addEventListener('change', debounce(async () => {
-          data['결과'] = checkbox.checked;
-          data['작성자'] = localStorage.getItem('username') || '';
-          data['작성일'] = new Date().toLocaleString('ko-KR', {
-            year: '2-digit',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          }).replace(/\. /g, '-').replace(/오전|오후/g, '').trim();
-          console.log(`Updating data for item ${item.id}:`, data);
-          const response = await fetch(`/api/items/${item.id}`, {
+      const th = document.createElement('th');
+      th.textContent = col;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    tableElement.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const itemsResponse = await fetch(`/api/items/${checklist.id}`);
+    if (!itemsResponse.ok) {
+      console.error('Failed to fetch items:', itemsResponse.status, itemsResponse.statusText);
+      alert('항목 데이터를 가져오지 못했습니다.');
+      return;
+    }
+    let items = await itemsResponse.json();
+    console.log('Items:', items);
+
+    items.forEach(item => {
+      const row = document.createElement('tr');
+      row.setAttribute('draggable', 'true');
+      row.dataset.id = item.id;
+      const data = item.data;
+      columns.forEach(col => {
+        const td = document.createElement('td');
+        if (col === '결과') {
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.className = 'checklist-checkbox';
+          checkbox.checked = data[col] === true;
+          checkbox.addEventListener('change', debounce(async () => {
+            data['결과'] = checkbox.checked;
+            data['작성자'] = localStorage.getItem('username') || '';
+            data['작성일'] = new Date().toLocaleString('ko-KR', {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace(/\. /g, '-').replace(/오전|오후/g, '').trim();
+            console.log(`Updating data for item ${item.id}:`, data);
+            try {
+              const response = await fetch(`/api/items/${item.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data, display_order: item.display_order })
+              });
+              const result = await response.json();
+              if (!result.success) {
+                console.error(`Failed to update item ${item.id}:`, result.message);
+                alert('입력값 업데이트에 실패했습니다: ' + result.message);
+              } else {
+                const rowCells = row.querySelectorAll('td');
+                rowCells[3].querySelector('textarea').value = data['작성자'];
+                rowCells[4].querySelector('textarea').value = data['작성일'];
+              }
+            } catch (error) {
+              console.error('Error updating item:', error.message);
+              alert('입력값 업데이트 중 오류가 발생했습니다: ' + error.message);
+            }
+          }, 500));
+          td.appendChild(checkbox);
+        } else if (col === '사진') {
+          if (item.photo_url) {
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-image photo-icon';
+            icon.title = '사진 보기';
+            icon.onclick = () => showPhotoModal(item.id, item.photo_url);
+            td.appendChild(icon);
+          } else {
+            const uploadBtn = document.createElement('button');
+            uploadBtn.textContent = '+';
+            uploadBtn.className = 'upload-photo-btn';
+            uploadBtn.onclick = () => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'image/*';
+              input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const formData = new FormData();
+                formData.append('photo', file);
+                formData.append('itemId', item.id);
+                console.log(`Uploading photo for item ${item.id}`);
+                try {
+                  const response = await fetch('/api/upload-photo', {
+                    method: 'POST',
+                    body: formData
+                  });
+                  const result = await response.json();
+                  if (result.success) {
+                    console.log(`Photo uploaded: ${result.photoUrl}`);
+                    showTable(currentTableName);
+                  } else {
+                    console.error('Failed to upload photo:', result.message);
+                    alert('사진 업로드에 실패했습니다: ' + result.message);
+                  }
+                } catch (error) {
+                  console.error('Error uploading photo:', error.message);
+                  alert('사진 업로드 중 오류가 발생했습니다: ' + error.message);
+                }
+              };
+              input.click();
+            };
+            td.appendChild(uploadBtn);
+          }
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.className = 'checklist-textarea';
+          textarea.value = data[col] || '';
+          textarea.readOnly = col === '작성자' || col === '작성일';
+          if (!textarea.readOnly) {
+            textarea.addEventListener('input', debounce(async () => {
+              data[col] = textarea.value;
+              adjustFontSize(textarea);
+              console.log(`Updating item ${item.id} with data:`, data);
+              try {
+                const response = await fetch(`/api/items/${item.id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ data, display_order: item.display_order })
+                });
+                const result = await response.json();
+                if (!result.success) {
+                  console.error(`Failed to update item ${item.id}:`, result.message);
+                  alert('입력값 업데이트에 실패했습니다: ' + result.message);
+                }
+              } catch (error) {
+                console.error('Error updating item:', error.message);
+                alert('입력값 업데이트 중 오류가 발생했습니다: ' + error.message);
+              }
+            }, 500));
+          }
+          adjustFontSize(textarea);
+          td.appendChild(textarea);
+        }
+        row.appendChild(td);
+      });
+      tbody.appendChild(row);
+    });
+
+    const addButtonRow = document.createElement('tr');
+    const addButtonCell = document.createElement('td');
+    addButtonCell.colSpan = columns.length;
+    addButtonCell.style.textAlign = 'center';
+    const addButton = document.createElement('button');
+    addButton.textContent = '항목 추가';
+    addButton.onclick = () => showItemModal(checklist.id, columns);
+    addButtonCell.appendChild(addButton);
+    addButtonRow.appendChild(addButtonCell);
+    tbody.appendChild(addButtonRow);
+
+    tableElement.appendChild(tbody);
+    tableDiv.appendChild(tableElement);
+    container.appendChild(tableDiv);
+
+    // 드래그 및 터치 이벤트 추가
+    const rows = tbody.querySelectorAll('tr:not(:last-child)');
+    rows.forEach(row => {
+      row.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', row.dataset.id);
+        row.classList.add('dragging');
+        console.log(`Drag started for row ${row.dataset.id}`);
+      });
+
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        console.log(`Drag ended for row ${row.dataset.id}`);
+      });
+
+      row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const draggingRow = tbody.querySelector('.dragging');
+        const afterElement = getDragAfterElement(tbody, e.clientY);
+        if (afterElement == null || afterElement === addButtonRow) {
+          tbody.insertBefore(draggingRow, addButtonRow);
+        } else {
+          tbody.insertBefore(draggingRow, afterElement);
+        }
+      });
+
+      row.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        const updatedRows = Array.from(tbody.querySelectorAll('tr:not(:last-child)'));
+        const updatedItems = updatedRows.map((row, index) => ({
+          id: parseInt(row.dataset.id),
+          display_order: index
+        }));
+        console.log(`Reordering items for checklist ${checklist.id}:`, updatedItems);
+        try {
+          const response = await fetch(`/api/items/${checklist.id}/reorder`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data })
+            body: JSON.stringify({ items: updatedItems })
           });
           const result = await response.json();
           if (!result.success) {
-            console.error(`Failed to update item ${item.id}:`, result.message);
-            alert('입력값 업데이트에 실패했습니다: ' + result.message);
+            console.error('Failed to reorder items:', result.message);
+            alert('항목 순서 변경에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
           } else {
-            const rowCells = row.querySelectorAll('td');
-            rowCells[3].querySelector('textarea').value = data['작성자'];
-            rowCells[4].querySelector('textarea').value = data['작성일'];
+            console.log('Items reordered successfully');
           }
-        }, 500));
-        td.appendChild(checkbox);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.className = 'checklist-textarea';
-        textarea.value = data[col] || '';
-        if (col === '작성자' || col === '작성일') {
-          textarea.readOnly = true;
-        } else {
-          textarea.addEventListener('input', debounce(async () => {
-            data[col] = textarea.value;
-            adjustFontSize(textarea);
-            console.log(`Updating item ${item.id} with data:`, data);
-            const response = await fetch(`/api/items/${item.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data })
-            });
-            const result = await response.json();
-            if (!result.success) {
-              console.error(`Failed to update item ${item.id}:`, result.message);
-              alert('입력값 업데이트에 실패했습니다: ' + result.message);
-            }
-          }, 500));
+        } catch (error) {
+          console.error('Error reordering items:', error.message);
+          alert('항목 순서 변경 중 오류가 발생했습니다: ' + error.message);
         }
-        adjustFontSize(textarea);
-        td.appendChild(textarea);
-      }
-      row.appendChild(td);
-    });
-    tbody.appendChild(row);
-  });
+      });
 
-  const addButtonRow = document.createElement('tr');
-  const addButtonCell = document.createElement('td');
-  addButtonCell.colSpan = columns.length;
-  addButtonCell.style.textAlign = 'center';
-  const addButton = document.createElement('button');
-  addButton.textContent = '항목 추가';
-  addButton.onclick = () => showItemModal(checklist.id, columns);
-  addButtonCell.appendChild(addButton);
-  addButtonRow.appendChild(addButtonCell);
-  tbody.appendChild(addButtonRow);
+      let touchStartY = 0;
+      let draggingRow = null;
 
-  tableElement.appendChild(tbody);
-  tableDiv.appendChild(tableElement);
-  container.appendChild(tableDiv);
+      row.addEventListener('touchstart', (e) => {
+        draggingRow = row;
+        row.classList.add('dragging');
+        touchStartY = e.touches[0].clientY;
+        console.log(`Touch started for row ${row.dataset.id}`);
+      });
 
-  // 드래그 및 터치 이벤트 추가
-  const rows = tbody.querySelectorAll('tr:not(:last-child)');
-  rows.forEach(row => {
-    row.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', row.dataset.id);
-      row.classList.add('dragging');
-      console.log(`Drag started for row ${row.dataset.id}`);
-    });
-
-    row.addEventListener('dragend', () => {
-      row.classList.remove('dragging');
-      console.log(`Drag ended for row ${row.dataset.id}`);
-    });
-
-    row.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const draggingRow = tbody.querySelector('.dragging');
-      const afterElement = getDragAfterElement(tbody, e.clientY);
-      if (afterElement == null || afterElement === addButtonRow) {
-        tbody.insertBefore(draggingRow, addButtonRow);
-      } else {
-        tbody.insertBefore(draggingRow, afterElement);
-      }
-    });
-
-    row.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      const updatedRows = Array.from(tbody.querySelectorAll('tr:not(:last-child)'));
-      const updatedItems = updatedRows.map((row, index) => ({
-        id: parseInt(row.dataset.id),
-        display_order: index
-      }));
-      console.log(`Reordering items for checklist ${checklist.id}:`, updatedItems);
-      try {
-        const response = await fetch(`/api/items/${checklist.id}/reorder`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: updatedItems })
-        });
-        const result = await response.json();
-        if (!result.success) {
-          console.error('Failed to reorder items:', result.message);
-          alert('항목 순서 변경에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
+      row.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touchY = e.touches[0].clientY;
+        const afterElement = getDragAfterElement(tbody, touchY);
+        if (afterElement == null || afterElement === addButtonRow) {
+          tbody.insertBefore(draggingRow, addButtonRow);
         } else {
-          console.log('Items reordered successfully');
+          tbody.insertBefore(draggingRow, afterElement);
         }
-      } catch (error) {
-        console.error('Error reordering items:', error.message);
-        alert('항목 순서 변경 중 오류가 발생했습니다: ' + error.message);
-      }
-    });
+      });
 
-    let touchStartY = 0;
-    let draggingRow = null;
-
-    row.addEventListener('touchstart', (e) => {
-      draggingRow = row;
-      row.classList.add('dragging');
-      touchStartY = e.touches[0].clientY;
-      console.log(`Touch started for row ${row.dataset.id}`);
-    });
-
-    row.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      const touchY = e.touches[0].clientY;
-      const afterElement = getDragAfterElement(tbody, touchY);
-      if (afterElement == null || afterElement === addButtonRow) {
-        tbody.insertBefore(draggingRow, addButtonRow);
-      } else {
-        tbody.insertBefore(draggingRow, afterElement);
-      }
-    });
-
-    row.addEventListener('touchend', async () => {
-      row.classList.remove('dragging');
-      console.log(`Touch ended for row ${row.dataset.id}`);
-      const updatedRows = Array.from(tbody.querySelectorAll('tr:not(:last-child)'));
-      const updatedItems = updatedRows.map((row, index) => ({
-        id: parseInt(row.dataset.id),
-        display_order: index
-      }));
-      console.log(`Reordering items for checklist ${checklist.id}:`, updatedItems);
-      try {
-        const response = await fetch(`/api/items/${checklist.id}/reorder`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: updatedItems })
-        });
-        const result = await response.json();
-        if (!result.success) {
-          console.error('Failed to reorder items:', result.message);
-          alert('항목 순서 변경에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
-        } else {
-          console.log('Items reordered successfully');
+      row.addEventListener('touchend', async () => {
+        row.classList.remove('dragging');
+        console.log(`Touch ended for row ${row.dataset.id}`);
+        const updatedRows = Array.from(tbody.querySelectorAll('tr:not(:last-child)'));
+        const updatedItems = updatedRows.map((row, index) => ({
+          id: parseInt(row.dataset.id),
+          display_order: index
+        }));
+        console.log(`Reordering items for checklist ${checklist.id}:`, updatedItems);
+        try {
+          const response = await fetch(`/api/items/${checklist.id}/reorder`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: updatedItems })
+          });
+          const result = await response.json();
+          if (!result.success) {
+            console.error('Failed to reorder items:', result.message);
+            alert('항목 순서 변경에 실패했습니다: ' + (result.message || '알 수 없는 오류'));
+          } else {
+            console.log('Items reordered successfully');
+          }
+        } catch (error) {
+          console.error('Error reordering items:', error.message);
+          alert('항목 순서 변경 중 오류가 발생했습니다: ' + error.message);
         }
-      } catch (error) {
-        console.error('Error reordering items:', error.message);
-        alert('항목 순서 변경 중 오류가 발생했습니다: ' + error.message);
-      }
-      draggingRow = null;
+        draggingRow = null;
+      });
     });
-  });
+  } catch (error) {
+    console.error('Error in showTable:', error.message, error.stack);
+    alert('체크리스트 로드 중 오류가 발생했습니다: ' + error.message);
+  }
 }
 
 function getDragAfterElement(tbody, y) {
@@ -685,7 +801,7 @@ function addDong() {
   const cancelBtn = document.getElementById('modalCancelBtn');
   const input = document.getElementById('dongNameInput');
 
-  confirmBtn.onclick = () => {
+  confirmBtn.onclick = async () => {
     const dongName = input.value.trim();
     if (dongName) {
       const dongButtons = document.getElementById('dong-buttons');
@@ -694,7 +810,7 @@ function addDong() {
       newButton.onclick = () => showTable(dongName);
       dongButtons.appendChild(newButton);
       currentTableName = dongName;
-      showTable(dongName);
+      await showTable(dongName);
     }
     document.body.removeChild(modal);
   };
